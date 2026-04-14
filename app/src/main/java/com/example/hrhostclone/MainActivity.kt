@@ -3723,11 +3723,12 @@ fun MonitorScreen(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(if (running) "工作中" else "待机中", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Surface(color = Color(0xFF8A8A8A), shape = RoundedCornerShape(6.dp)) {
-                            Text("QNN", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), fontWeight = FontWeight.SemiBold)
-                        }
-                        Surface(color = Color(0xFF8A8A8A), shape = RoundedCornerShape(6.dp)) {
-                            Text("HTP", color = Color.White, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), fontWeight = FontWeight.SemiBold)
+                        runtimeBackendBadges().forEach { badge ->
+                            ExecutionBackendBadge(
+                                label = badge.label,
+                                containerColor = badge.containerColor,
+                                contentColor = badge.contentColor
+                            )
                         }
                     }
                     Text("版本: $APP_VERSION", color = Color(0xFF555555), fontSize = 12.sp)
@@ -3998,6 +3999,53 @@ fun MonitorScreen(
                 }
             }
         }
+    }
+}
+
+private data class BackendBadgeSpec(
+    val label: String,
+    val containerColor: Color,
+    val contentColor: Color = Color.White
+)
+
+@Composable
+private fun runtimeBackendBadges(): List<BackendBadgeSpec> {
+    return when (RuntimeBridge.selectedModelKind) {
+        ModelKind.ONNX -> listOf(
+            BackendBadgeSpec(label = "ONNX", containerColor = Color(0xFF6E737A)),
+            BackendBadgeSpec(
+                label = OnnxEngine.activeExecutionProvider.ifBlank { "未加载" },
+                containerColor = when (OnnxEngine.activeExecutionProvider.uppercase(Locale.ROOT)) {
+                    "NNAPI" -> Color(0xFF2E7D32)
+                    "CPU" -> Color(0xFF616161)
+                    else -> Color(0xFF546E7A)
+                }
+            )
+        )
+        ModelKind.NCNN -> listOf(
+            BackendBadgeSpec(label = "NCNN", containerColor = Color(0xFF1565C0)),
+            BackendBadgeSpec(label = "NATIVE", containerColor = Color(0xFF546E7A))
+        )
+        ModelKind.FILE -> listOf(
+            BackendBadgeSpec(label = "未加载模型", containerColor = Color(0xFF8A8A8A))
+        )
+    }
+}
+
+@Composable
+private fun ExecutionBackendBadge(
+    label: String,
+    containerColor: Color,
+    contentColor: Color = Color.White
+) {
+    Surface(color = containerColor, shape = RoundedCornerShape(6.dp)) {
+        Text(
+            label,
+            color = contentColor,
+            fontSize = 10.sp,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
